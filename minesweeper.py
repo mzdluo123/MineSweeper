@@ -19,6 +19,7 @@ class Cell:
         self.is_marked = is_marked
         self.row = row
         self.column = column
+        self.is_checked = False
 
 
 def __str__(self):
@@ -54,18 +55,20 @@ class MineSweeper:
             for j in range(0, self.column):
                 cell = self.panel[i][j]
                 if cell.is_marked:
-                    draw.rectangle((i + 1, j + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1), fill=ImageColor.getrgb("blue"))
+                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                                   fill=ImageColor.getrgb("blue"))
                 if not cell.is_mined:
-                    draw.rectangle((i + 1, j + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1), fill=ImageColor.getrgb("gray"))
+                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                                   fill=ImageColor.getrgb("gray"))
 
     def __draw_cell(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
         for i in range(0, self.row):
             for j in range(0, self.column):
                 cell = self.panel[i][j]
-                if cell.is_mined:
+                if not cell.is_mined:
                     font_size = self.font.getsize("1A")
-                    index = f"{i}{COLUMN_NAME[j]}"
+                    index = f"{j}{COLUMN_NAME[i]}"
                     center = (80 * (i + 1) - (font_size[0] / 2) - 40, 80 * (j + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
@@ -93,9 +96,14 @@ class MineSweeper:
         cell = self.panel[row][column]
         if self.state == GameState.PREPARE:
             self.__gen_mine()
+        if cell.is_mined:
+            raise ValueError("你已经挖过这里了")
         if cell.is_mine:
             pass
             # todo 游戏结束
+        cell.is_mined = True
+        self.__reset_check()
+        self.__spread_not_mine(row, column, True)
 
     def __gen_mine(self):
         count = 0
@@ -106,11 +114,38 @@ class MineSweeper:
                 continue
             self.panel[row][column].is_mine = True
             count += 1
+        self.state = GameState.GAMING
+
+    def __spread_not_mine(self, row: int, column, first=False):
+        if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
+            return
+        cell = self.panel[row][column]
+        if cell.is_checked:
+            return
+        if cell.is_mine:
+            return
+        cell.is_mined = True
+        cell.is_checked = True
+        if self.count_around(row, column) > 0:
+            return
+        self.__spread_not_mine(row + 1, column)
+        self.__spread_not_mine(row - 1, column)
+        self.__spread_not_mine(row, column + 1)
+        self.__spread_not_mine(row, column - 1)
+        self.__spread_not_mine(row + 1, column + 1)
+        self.__spread_not_mine(row - 1, column - 1)
+
+    def __reset_check(self):
+        for i in range(0, self.row):
+            for j in range(0, self.column):
+                self.panel[i][j].is_checked = False
 
     def count_around(self, row: int, column: int) -> int:
         count = 0
-        for r in range(row - 1, row + 1):
-            for c in range(column - 1, column + 1):
+        for r in range(row - 1, row + 2):
+            for c in range(column - 1, column + 2):
+                if r > self.row - 1 or c > self.column - 1 or r < 0 or c < 0:
+                    continue
                 if self.panel[r][c].is_mine:
                     count += 1
         if self.panel[row][column].is_mine:
@@ -119,6 +154,7 @@ class MineSweeper:
 
 
 if __name__ == '__main__':
-    mine = MineSweeper(10, 10, 10)
+    mine = MineSweeper(10, 10, 20)
     mine.mine(0, 0)
+
     mine.draw_panel().show()
