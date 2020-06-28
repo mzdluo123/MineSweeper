@@ -26,7 +26,8 @@ from mirai.event.message.chain import (
 from mirai.event.message.models import (
     GroupMessage,
     FriendMessage,
-    BotMessage
+    BotMessage,
+    TempMessage
 )
 
 from mirai.event import (

@@ -29,7 +29,7 @@ class Cell:
 
 class MineSweeper:
     def __init__(self, row: int, column: int, mines: int):
-        if row > 10 or column > 26:
+        if row > 26 or column > 26:
             raise ValueError("暂不支持这么大的游戏盘")
         self.row = row
         self.column = column
@@ -77,8 +77,8 @@ class MineSweeper:
             for j in range(0, self.column):
                 cell = self.panel[i][j]
                 if not cell.is_mined:
-                    font_size = self.font.getsize("1A")
-                    index = f"{j}{COLUMN_NAME[i]}"
+                    font_size = self.font.getsize("AA")
+                    index = f"{COLUMN_NAME[j]}{COLUMN_NAME[i]}"
                     center = (80 * (i + 1) - (font_size[0] / 2) - 40, 80 * (j + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
@@ -192,7 +192,7 @@ class MineSweeper:
     def parse_input(input_text: str) -> Tuple[int, int]:
         if len(input_text) != 2:
             raise ValueError("非法位置")
-        return COLUMN_NAME.index(input_text[1].upper()) ,int(input_text[0])
+        return COLUMN_NAME.index(input_text[1].upper()) ,COLUMN_NAME.index(input_text[0].upper())
 
     def __is_valid_location(self, row: int, column: int) -> bool:
         if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
@@ -201,7 +201,7 @@ class MineSweeper:
 
 
 if __name__ == '__main__':
-    mine = MineSweeper(10, 10, 1)
+    mine = MineSweeper(20, 20, 1)
     mine.draw_panel().show()
     while True:
         try:
