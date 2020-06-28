@@ -2,3 +2,4 @@ pillow
 aiohttp
 pydantic
 logbook
+async_lru

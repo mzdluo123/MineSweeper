@@ -49,7 +49,8 @@ async def event_gm(app: Mirai, group: Group, member: Member, message: GroupMessa
         使用 【m d】 位置1 位置2 来挖开多个方快
         使用 【m t】 位置1 位置2 来标记多个方块
         使用 【m show】 来重新查看游戏盘
-        使用 【m exit】 退出游戏""")])
+        使用 【m exit】 退出游戏
+        项目地址 https://github.com/mzdluo123/MineSweeper""")])
     if len(plain.text) > 2 and plain.text[:1] == "m":
         commands = plain.text.split(" ")
         if commands[1] == "开始":
