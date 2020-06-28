@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageColor, ImageFont
 from enum import Enum
 import random
+from typing import Tuple
 
 COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -21,13 +22,14 @@ class Cell:
         self.column = column
         self.is_checked = False
 
-
-def __str__(self):
-    return f"[Cell] {self.is_mine}"
+    def __str__(self):
+        return f"[Cell] {self.is_mine}"
 
 
 class MineSweeper:
     def __init__(self, row: int, column: int, mines: int):
+        if row > 10 or column > 26:
+            raise ValueError("暂不支持这么大的游戏盘")
         self.row = row
         self.column = column
         self.mines = mines
@@ -54,6 +56,10 @@ class MineSweeper:
         for i in range(0, self.row):
             for j in range(0, self.column):
                 cell = self.panel[i][j]
+                if self.state == GameState.FAIL and cell.is_mine:
+                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                                   fill=ImageColor.getrgb("red"))
+                    continue
                 if cell.is_marked:
                     draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("blue"))
@@ -79,7 +85,8 @@ class MineSweeper:
                     center = (80 * (i + 1) - (font_size[0] / 2) - 40, 80 * (j + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, str(count), fill=self.__get_count_text_color(count), font=self.font)
 
-    def __get_count_text_color(self, count):
+    @staticmethod
+    def __get_count_text_color(count):
         if count == 1:
             return ImageColor.getrgb("green")
         if count == 2:
@@ -91,7 +98,7 @@ class MineSweeper:
         return ImageColor.getrgb("black")
 
     def mine(self, row: int, column: int):
-        if row > self.row or column > self.column or row < 0 or column < 0:
+        if self.__is_valid_location(row, column):
             raise ValueError("非法操作")
         cell = self.panel[row][column]
         if self.state == GameState.PREPARE:
@@ -99,11 +106,20 @@ class MineSweeper:
         if cell.is_mined:
             raise ValueError("你已经挖过这里了")
         if cell.is_mine:
-            pass
-            # todo 游戏结束
+            self.state = GameState.FAIL
         cell.is_mined = True
         self.__reset_check()
-        self.__spread_not_mine(row, column, True)
+        self.__spread_not_mine(row, column)
+        self.__win_check()
+
+    def tag(self, row: int, column: int):
+        cell = self.panel[row][column]
+        if cell.is_mined:
+            raise ValueError("你不能标记一个你挖开的地方")
+        if cell.is_marked:
+            cell.is_marked = False
+        else:
+            cell.is_marked = True
 
     def __gen_mine(self):
         count = 0
@@ -116,8 +132,8 @@ class MineSweeper:
             count += 1
         self.state = GameState.GAMING
 
-    def __spread_not_mine(self, row: int, column, first=False):
-        if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
+    def __spread_not_mine(self, row: int, column):
+        if not self.__is_valid_location(row, column):
             return
         cell = self.panel[row][column]
         if cell.is_checked:
@@ -140,11 +156,20 @@ class MineSweeper:
             for j in range(0, self.column):
                 self.panel[i][j].is_checked = False
 
+    def __win_check(self):
+        mined = 0
+        for i in range(0, self.row):
+            for j in range(0, self.column):
+                if self.panel[i][j].is_mined:
+                    mined += 1
+        if mined == (self.column * self.row) - self.mines:
+            self.state = GameState.WIN
+
     def count_around(self, row: int, column: int) -> int:
         count = 0
         for r in range(row - 1, row + 2):
             for c in range(column - 1, column + 2):
-                if r > self.row - 1 or c > self.column - 1 or r < 0 or c < 0:
+                if not self.__is_valid_location(r, c):
                     continue
                 if self.panel[r][c].is_mine:
                     count += 1
@@ -152,9 +177,26 @@ class MineSweeper:
             count -= 1
         return count
 
+    @staticmethod
+    def parse_input(input_text: str) -> Tuple[int, int]:
+        if len(input_text) != 2:
+            raise ValueError("非法位置")
+        return int(input_text[0]), COLUMN_NAME.index(input_text[1].upper())
+
+    def __is_valid_location(self, row: int, column: int) -> bool:
+        if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
+            return False
+        return True
+
 
 if __name__ == '__main__':
-    mine = MineSweeper(10, 10, 20)
-    mine.mine(0, 0)
-
+    mine = MineSweeper(10, 10, 1)
     mine.draw_panel().show()
+    while True:
+        try:
+            location = MineSweeper.parse_input(input())
+            mine.mine(location[0], location[1])
+            mine.draw_panel().show()
+            print(mine.state)
+        except Exception as e:
+            print(e)
