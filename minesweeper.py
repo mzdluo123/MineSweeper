@@ -103,6 +103,8 @@ class MineSweeper:
         cell = self.panel[row][column]
         if self.state == GameState.PREPARE:
             self.__gen_mine()
+        if self.state != GameState.GAMING:
+            raise ValueError("游戏已结束")
         if cell.is_mined:
             raise ValueError("你已经挖过这里了")
         if cell.is_mine:
