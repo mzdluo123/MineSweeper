@@ -31,6 +31,10 @@ class MineSweeper:
     def __init__(self, row: int, column: int, mines: int):
         if row > 26 or column > 26:
             raise ValueError("暂不支持这么大的游戏盘")
+        if mines >= row * column or mines == 0:
+            raise ValueError("非法操作")
+        if mines < column-1 or mines < row-1:
+            raise ValueError("就不能来点难的吗")
         self.row = row
         self.column = column
         self.mines = mines
@@ -192,7 +196,7 @@ class MineSweeper:
     def parse_input(input_text: str) -> Tuple[int, int]:
         if len(input_text) != 2:
             raise ValueError("非法位置")
-        return COLUMN_NAME.index(input_text[1].upper()) ,COLUMN_NAME.index(input_text[0].upper())
+        return COLUMN_NAME.index(input_text[1].upper()), COLUMN_NAME.index(input_text[0].upper())
 
     def __is_valid_location(self, row: int, column: int) -> bool:
         if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:

@@ -15,6 +15,7 @@ in_gaming_list: Dict[int, MineSweeper] = {}
 HELP = """
 欢迎游玩扫雷小游戏
 输入 【m 开始】 即可开始游戏
+输入 【m 中级或高级】 即可开始不同难度游戏
 输入 【m 自定义 长 宽 雷数】 即可开始自定义游戏
 使用 【m d 位置1 位置2】 来挖开多个方快
 使用 【m t 位置1 位置2】 来标记多个方块
@@ -35,7 +36,7 @@ def clean_thread():
 
 async def send_msg(target, msg: list, user, msg_type):
     if msg_type is MessageItemType.GroupMessage:
-        msg.insert(0,At(user.id))
+        msg.insert(0, At(user.id))
         await app.sendGroupMessage(target, msg)
         return
     if msg_type is MessageItemType.FriendMessage:
@@ -82,6 +83,14 @@ async def gm_handel(app: Mirai, group: Group, member: Member, message: GroupMess
     await msg_handel(group, plain, member, MessageItemType.GroupMessage)
 
 
+async def new_game(source, user, msg_type, row: int, column: int, mines: int):
+    if user.id in in_gaming_list:
+        await send_msg(source, [Plain("你已经在游戏中了")], user, msg_type)
+        return
+    in_gaming_list[user.id] = MineSweeper(row, column, mines)
+    await send_panel(app, source, user, msg_type)
+
+
 async def msg_handel(source, plain, user, msg_type):
     if plain is None:
         return
@@ -90,18 +99,15 @@ async def msg_handel(source, plain, user, msg_type):
     if len(plain.text) > 2 and plain.text[:1] == "m":
         commands = plain.text.split(" ")
         if commands[1] == "开始":
-            if user.id in in_gaming_list:
-                await send_msg(source, [Plain("你已经在游戏中了")], user, msg_type)
-                return
-            in_gaming_list[user.id] = MineSweeper(10, 10, 10)
-            await send_panel(app, source, user, msg_type)
+            await new_game(source, user, msg_type, 10, 10, 10)
+        if commands[1] == "中级":
+            await new_game(source, user, msg_type, 16, 16, 40)
+        if commands[1] == "高级":
+            await new_game(source, user, msg_type, 20, 20, 90)
+
         if commands[1] == "自定义" and len(commands) == 5:
-            if user.id in in_gaming_list:
-                await send_msg(source, [Plain("你已经在游戏中了")], user, msg_type)
-                return
             try:
-                in_gaming_list[user.id] = MineSweeper(int(commands[2]), int(commands[3]), int(commands[4]))
-                await send_panel(app, source, user, msg_type)
+                await new_game(source, user, msg_type, int(commands[2]), int(commands[3]), int(commands[4]))
             except ValueError as e:
                 await send_msg(source, [Plain(f"错误 {e}")], user, msg_type)
         if commands[1] == "help":
