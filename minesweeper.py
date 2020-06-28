@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageColor, ImageFont
 from enum import Enum
 import random
 from typing import Tuple
+from time import time
 
 COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -33,6 +34,8 @@ class MineSweeper:
         self.row = row
         self.column = column
         self.mines = mines
+        self.start_time = time()
+        self.actions = 0
         self.font = ImageFont.truetype("00TT.TTF", 40)
         self.panel = [[Cell(False, row=r, column=c) for c in range(column)] for r in range(row)]
         self.state = GameState.PREPARE
@@ -102,15 +105,17 @@ class MineSweeper:
         if not self.__is_valid_location(row, column):
             raise ValueError("非法操作")
         cell = self.panel[row][column]
+        if cell.is_mined:
+            raise ValueError("你已经挖过这里了")
+        cell.is_mined = True
         if self.state == GameState.PREPARE:
             self.__gen_mine()
         if self.state != GameState.GAMING:
             raise ValueError("游戏已结束")
-        if cell.is_mined:
-            raise ValueError("你已经挖过这里了")
+        self.actions += 1
         if cell.is_mine:
             self.state = GameState.FAIL
-        cell.is_mined = True
+            return
         self.__reset_check()
         self.__spread_not_mine(row, column)
         self.__win_check()
@@ -119,6 +124,9 @@ class MineSweeper:
         cell = self.panel[row][column]
         if cell.is_mined:
             raise ValueError("你不能标记一个你挖开的地方")
+        if self.state != GameState.GAMING and self.state != GameState.PREPARE:
+            raise ValueError("游戏已结束")
+        self.actions += 1
         if cell.is_marked:
             cell.is_marked = False
         else:
@@ -129,7 +137,7 @@ class MineSweeper:
         while count < self.mines:
             row = random.randint(0, self.row - 1)
             column = random.randint(0, self.row - 1)
-            if self.panel[row][column].is_mine:
+            if self.panel[row][column].is_mine or self.panel[row][column].is_mined:
                 continue
             self.panel[row][column].is_mine = True
             count += 1
@@ -184,7 +192,7 @@ class MineSweeper:
     def parse_input(input_text: str) -> Tuple[int, int]:
         if len(input_text) != 2:
             raise ValueError("非法位置")
-        return int(input_text[0]), COLUMN_NAME.index(input_text[1].upper())
+        return COLUMN_NAME.index(input_text[1].upper()) ,int(input_text[0])
 
     def __is_valid_location(self, row: int, column: int) -> bool:
         if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:

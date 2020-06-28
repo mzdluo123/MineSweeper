@@ -1,3 +1,4 @@
 pillow
 aiohttp
 pydantic
+logbook

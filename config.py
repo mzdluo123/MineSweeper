@@ -1,3 +1,3 @@
-qq = 00000
-authKey = ""
-mirai_api_http_locate = ""
+qq = 1023718443
+authKey = "fcny4932nbc3t687ywd"
+mirai_api_http_locate = "39.98.177.38:8085/"
