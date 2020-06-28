@@ -63,6 +63,7 @@ class MineSweeper:
                 if cell.is_marked:
                     draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("blue"))
+                    continue
                 if not cell.is_mined:
                     draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("gray"))
@@ -98,7 +99,7 @@ class MineSweeper:
         return ImageColor.getrgb("black")
 
     def mine(self, row: int, column: int):
-        if self.__is_valid_location(row, column):
+        if not self.__is_valid_location(row, column):
             raise ValueError("非法操作")
         cell = self.panel[row][column]
         if self.state == GameState.PREPARE:
