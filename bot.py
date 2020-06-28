@@ -11,11 +11,22 @@ app = Mirai(f"mirai://{mirai_api_http_locate}?authKey={authKey}&qq={qq}", websoc
 running = True
 in_gaming_list: Dict[int, MineSweeper] = {}
 
+HELP = """
+欢迎游玩扫雷小游戏
+输入 【m 开始】 即可开始游戏
+使用 【m d】 位置1 位置2 来挖开多个方快
+使用 【m t】 位置1 位置2 来标记多个方块
+使用 【m show】 来重新查看游戏盘
+使用 【m help】 来查看帮助
+使用 【m exit】 退出游戏
+项目地址 https://github.com/mzdluo123/MineSweeper
+"""
+
 
 def clean_thread():
     while running:
         for k, v in in_gaming_list.items():
-            if time() - v.start_time > 10 * 60:
+            if time() - v.start_time > 15 * 60:
                 del in_gaming_list[k]
         sleep(2)
 
@@ -32,9 +43,11 @@ async def send_panel(app: Mirai, group: Group, member: Member):
 async def send_game_over(app: Mirai, group: Group, member: Member):
     minesweeper = in_gaming_list[member.id]
     if minesweeper.state == GameState.WIN:
-        await app.sendGroupMessage(group, [At(member.id), Plain("恭喜你赢了，再来一次吧！")])
+        await app.sendGroupMessage(group, [At(member.id), Plain(
+            f"恭喜你赢了，再来一次吧！耗时{time() - minesweeper.start_time}秒 操作了{minesweeper.actions}次")])
     if minesweeper.state == GameState.FAIL:
-        await app.sendGroupMessage(group, [At(member.id), Plain("太可惜了，就差一点点，再来一次吧！")])
+        await app.sendGroupMessage(group, [At(member.id), Plain(
+            f"太可惜了，就差一点点，再来一次吧！耗时{time() - minesweeper.start_time}秒 操作了{minesweeper.actions}次")])
     del in_gaming_list[member.id]
 
 
@@ -44,13 +57,7 @@ async def event_gm(app: Mirai, group: Group, member: Member, message: GroupMessa
     if plain is None:
         return
     if plain.text == "扫雷":
-        await app.sendGroupMessage(group, [Plain("""欢迎游玩扫雷小游戏
-        输入 【m 开始】 即可开始游戏
-        使用 【m d】 位置1 位置2 来挖开多个方快
-        使用 【m t】 位置1 位置2 来标记多个方块
-        使用 【m show】 来重新查看游戏盘
-        使用 【m exit】 退出游戏
-        项目地址 https://github.com/mzdluo123/MineSweeper""")])
+        await app.sendGroupMessage(group, [Plain(HELP)])
     if len(plain.text) > 2 and plain.text[:1] == "m":
         commands = plain.text.split(" ")
         if commands[1] == "开始":
@@ -70,6 +77,8 @@ async def event_gm(app: Mirai, group: Group, member: Member, message: GroupMessa
                 del in_gaming_list[member.id]
             else:
                 await app.sendGroupMessage(group, [At(member.id), Plain("请输入 m 开始 开始游戏")])
+        if commands[1] == "help":
+            await app.sendGroupMessage(group, [Plain(HELP)])
 
         if len(commands) < 3:
             return
