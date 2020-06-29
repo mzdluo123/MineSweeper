@@ -1,3 +1,4 @@
+Cython
 pillow
 aiohttp
 pydantic

@@ -1,12 +1,16 @@
+import pyximport
+
+pyximport.install()
 from mirai import Mirai, Plain, At, Group, Member, Image, Friend, FriendMessage, GroupMessage, TempMessage
 from mirai.event.message.models import MessageItemType
 from config import mirai_api_http_locate, authKey, qq
-from minesweeper import MineSweeper, GameState
+from minesweeper import MineSweeper,GameState
 from typing import Dict
 from io import BytesIO
 from time import time, sleep
 from threading import Thread
 import signal
+
 
 app = Mirai(f"mirai://{mirai_api_http_locate}?authKey={authKey}&qq={qq}", websocket=True)
 running = True
@@ -134,6 +138,7 @@ async def msg_handel(source, plain, user, msg_type):
                     location = MineSweeper.parse_input(commands[i])
                     in_gaming_list[user.id].mine(location[0], location[1])
                     if in_gaming_list[user.id].state != GameState.GAMING:
+                        print("break!")
                         break
             except ValueError as e:
                 await send_msg(source, [Plain(f"错误: {e}")], user, msg_type)

@@ -1,3 +1,6 @@
+import pyximport
+
+pyximport.install()
 import time
 from minesweeper import MineSweeper
 

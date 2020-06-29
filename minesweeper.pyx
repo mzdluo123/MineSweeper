@@ -1,20 +1,19 @@
-from PIL import Image, ImageDraw, ImageColor, ImageFont
-from enum import Enum
+#cython: language_level=3
 import random
-from typing import Tuple
 from time import time
+from PIL import Image, ImageDraw, ImageColor, ImageFont
 
-COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+cdef str COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-
-class GameState(Enum):
+cpdef enum GameState:
     PREPARE = 1
     GAMING = 2
     WIN = 3
     FAIL = 4
 
-
-class Cell:
+cdef class Cell:
+    cdef public int row, column
+    cdef public bint is_mine, is_mined, is_marked, is_checked
     def __init__(self, is_mine: bool, row: int = 0, column: int = 0, is_mined: bool = False, is_marked: bool = False):
         self.is_mine = is_mine
         self.is_mined = is_mined
@@ -26,8 +25,13 @@ class Cell:
     def __str__(self):
         return f"[Cell] is_mine:{self.is_mine} is_marked:{self.is_marked} is_mined:{self.is_mined}"
 
-
-class MineSweeper:
+cdef class MineSweeper:
+    # 需要外部访问需要使用public
+    cdef public int row, column, mines, actions
+    cdef readonly float start_time
+    cdef list panel
+    cdef font
+    cdef readonly GameState state
     def __init__(self, row: int, column: int, mines: int):
         if row > 26 or column > 26:
             raise ValueError("暂不支持这么大的游戏盘")
@@ -47,25 +51,26 @@ class MineSweeper:
     def __str__(self):
         return f"[MineSweeper] {self.mines} in {self.row}*{self.column}"
 
-
     def draw_panel(self) -> Image.Image:
-        start = time()
+        start = time()*1000
         img = Image.new("RGB", (80 * self.column, 80 * self.row), (255, 255, 255))
         self.__draw_split_line(img)
         self.__draw_cell_cover(img)
         self.__draw_cell(img)
-        print(f"draw spend {time()-start}ms at {str(self)}")
+        print(f"draw spend {time() - start}ms at {str(self)}")
         return img
-
-    def __draw_split_line(self, img: Image.Image):
+    # cdef 只能cython调用
+    cdef __draw_split_line(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
+        cdef int i
         for i in range(0, self.row):
             draw.line((0, i * 80, img.size[0], i * 80), fill=ImageColor.getrgb("black"))
         for i in range(0, self.column):
             draw.line((i * 80, 0, i * 80, img.size[1]), fill=ImageColor.getrgb("black"))
 
-    def __draw_cell_cover(self, img: Image.Image):
+    cdef __draw_cell_cover(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
+        cdef int i, j
         for i in range(0, self.row):
             for j in range(0, self.column):
                 cell = self.panel[i][j]
@@ -81,8 +86,9 @@ class MineSweeper:
                     draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("gray"))
 
-    def __draw_cell(self, img: Image.Image):
+    cdef __draw_cell(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
+        cdef int i, j
         for i in range(0, self.row):
             for j in range(0, self.column):
                 cell = self.panel[i][j]
@@ -99,8 +105,7 @@ class MineSweeper:
                     center = (80 * (j + 1) - (font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, str(count), fill=self.__get_count_text_color(count), font=self.font)
 
-    @staticmethod
-    def __get_count_text_color(count):
+    cdef __get_count_text_color(self, int count):
         if count == 1:
             return ImageColor.getrgb("green")
         if count == 2:
@@ -111,11 +116,12 @@ class MineSweeper:
             return ImageColor.getrgb("darkred")
         return ImageColor.getrgb("black")
 
-    def mine(self, row: int, column: int):
+    # 允许python调用
+    cpdef void mine(self, int row, int column):
         if not self.__is_valid_location(row, column):
             raise ValueError("非法操作")
-        start = time()
-        cell = self.panel[row][column]
+        cdef start = time()*1000
+        cdef Cell cell = self.panel[row][column]
         if cell.is_mined:
             raise ValueError("你已经挖过这里了")
         cell.is_mined = True
@@ -130,11 +136,11 @@ class MineSweeper:
         self.__reset_check()
         self.__spread_not_mine(row, column)
         self.__win_check()
-        print(f"mine spend {time()-start}ms at {str(self)}")
+        print(f"mine spend {time() - start}ms at {str(self)}")
 
-    def tag(self, row: int, column: int):
-        cell = self.panel[row][column]
-        start = time()
+    cpdef void tag(self, int row, int column):
+        cdef Cell cell = self.panel[row][column]
+        cdef start = time()*1000
         if cell.is_mined:
             raise ValueError("你不能标记一个你挖开的地方")
         if self.state != GameState.GAMING and self.state != GameState.PREPARE:
@@ -144,10 +150,10 @@ class MineSweeper:
             cell.is_marked = False
         else:
             cell.is_marked = True
-        print(f"tag spend {time()-start}ms at {str(self)}")
+        print(f"tag spend {time() - start}ms at {str(self)}")
 
-    def __gen_mine(self):
-        count = 0
+    cdef void __gen_mine(self):
+        cdef int count = 0
         while count < self.mines:
             row = random.randint(0, self.row - 1)
             column = random.randint(0, self.column - 1)
@@ -157,7 +163,7 @@ class MineSweeper:
             count += 1
         self.state = GameState.GAMING
 
-    def __spread_not_mine(self, row: int, column):
+    cdef void __spread_not_mine(self, int row, int column):
         if not self.__is_valid_location(row, column):
             return
         cell = self.panel[row][column]
@@ -167,7 +173,7 @@ class MineSweeper:
             return
         cell.is_mined = True
         cell.is_checked = True
-        count = self.count_around(row, column)
+        cdef int count = self.count_around(row, column)
         if count > 0:
             return
         self.__spread_not_mine(row + 1, column)
@@ -180,12 +186,12 @@ class MineSweeper:
             self.__spread_not_mine(row + 1, column - 1)
             self.__spread_not_mine(row - 1, column + 1)
 
-    def __reset_check(self):
+    cdef void __reset_check(self):
         for i in range(0, self.row):
             for j in range(0, self.column):
                 self.panel[i][j].is_checked = False
 
-    def __win_check(self):
+    cdef void __win_check(self):
         mined = 0
         for i in range(0, self.row):
             for j in range(0, self.column):
@@ -194,8 +200,8 @@ class MineSweeper:
         if mined == (self.column * self.row) - self.mines:
             self.state = GameState.WIN
 
-    def count_around(self, row: int, column: int) -> int:
-        count = 0
+    cdef int count_around(self, int row, int column):
+        cdef count = 0
         for r in range(row - 1, row + 2):
             for c in range(column - 1, column + 2):
                 if not self.__is_valid_location(r, c):
@@ -207,25 +213,12 @@ class MineSweeper:
         return count
 
     @staticmethod
-    def parse_input(input_text: str) -> Tuple[int, int]:
+    def parse_input(input_text: str):
         if len(input_text) != 2:
             raise ValueError("非法位置")
         return COLUMN_NAME.index(input_text[0].upper()), COLUMN_NAME.index(input_text[1].upper())
 
-    def __is_valid_location(self, row: int, column: int) -> bool:
+    cdef bint __is_valid_location(self, int row, int  column):
         if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
             return False
         return True
-
-
-if __name__ == '__main__':
-    mine = MineSweeper(25, 25, 25)
-    mine.draw_panel().show()
-    while True:
-        try:
-            location = MineSweeper.parse_input(input())
-            mine.mine(location[0], location[1])
-            mine.draw_panel().show()
-            print(mine.state)
-        except Exception as e:
-            print(e)
