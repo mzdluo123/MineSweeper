@@ -33,7 +33,7 @@ class MineSweeper:
             raise ValueError("暂不支持这么大的游戏盘")
         if mines >= row * column or mines == 0:
             raise ValueError("非法操作")
-        if mines < column-1 or mines < row-1:
+        if mines < column - 1 or mines < row - 1:
             raise ValueError("就不能来点难的吗")
         self.row = row
         self.column = column
@@ -64,15 +64,15 @@ class MineSweeper:
             for j in range(0, self.column):
                 cell = self.panel[i][j]
                 if self.state == GameState.FAIL and cell.is_mine:
-                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                    draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("red"))
                     continue
                 if cell.is_marked:
-                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                    draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("blue"))
                     continue
                 if not cell.is_mined:
-                    draw.rectangle((i * 80 + 1, j * 80 + 1, (i + 1) * 80 - 1, (j + 1) * 80 - 1),
+                    draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
                                    fill=ImageColor.getrgb("gray"))
 
     def __draw_cell(self, img: Image.Image):
@@ -82,15 +82,15 @@ class MineSweeper:
                 cell = self.panel[i][j]
                 if not cell.is_mined:
                     font_size = self.font.getsize("AA")
-                    index = f"{COLUMN_NAME[j]}{COLUMN_NAME[i]}"
-                    center = (80 * (i + 1) - (font_size[0] / 2) - 40, 80 * (j + 1) - 40 - (font_size[1] / 2))
+                    index = f"{COLUMN_NAME[i]}{COLUMN_NAME[j]}"
+                    center = (80 * (j + 1) - (font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
                     count = self.count_around(i, j)
                     if count == 0:
                         continue
                     font_size = self.font.getsize(str(count))
-                    center = (80 * (i + 1) - (font_size[0] / 2) - 40, 80 * (j + 1) - 40 - (font_size[1] / 2))
+                    center = (80 * (j + 1) - (font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (font_size[1] / 2))
                     draw.text(center, str(count), fill=self.__get_count_text_color(count), font=self.font)
 
     @staticmethod
@@ -140,7 +140,7 @@ class MineSweeper:
         count = 0
         while count < self.mines:
             row = random.randint(0, self.row - 1)
-            column = random.randint(0, self.row - 1)
+            column = random.randint(0, self.column - 1)
             if self.panel[row][column].is_mine or self.panel[row][column].is_mined:
                 continue
             self.panel[row][column].is_mine = True
@@ -157,14 +157,18 @@ class MineSweeper:
             return
         cell.is_mined = True
         cell.is_checked = True
-        if self.count_around(row, column) > 0:
+        count = self.count_around(row, column)
+        if count > 0:
             return
         self.__spread_not_mine(row + 1, column)
         self.__spread_not_mine(row - 1, column)
         self.__spread_not_mine(row, column + 1)
         self.__spread_not_mine(row, column - 1)
-        self.__spread_not_mine(row + 1, column + 1)
-        self.__spread_not_mine(row - 1, column - 1)
+        if count == 0:
+            self.__spread_not_mine(row + 1, column + 1)
+            self.__spread_not_mine(row - 1, column - 1)
+            self.__spread_not_mine(row + 1, column - 1)
+            self.__spread_not_mine(row - 1, column + 1)
 
     def __reset_check(self):
         for i in range(0, self.row):
@@ -196,7 +200,7 @@ class MineSweeper:
     def parse_input(input_text: str) -> Tuple[int, int]:
         if len(input_text) != 2:
             raise ValueError("非法位置")
-        return COLUMN_NAME.index(input_text[1].upper()), COLUMN_NAME.index(input_text[0].upper())
+        return COLUMN_NAME.index(input_text[0].upper()), COLUMN_NAME.index(input_text[1].upper())
 
     def __is_valid_location(self, row: int, column: int) -> bool:
         if row > self.row - 1 or column > self.column - 1 or row < 0 or column < 0:
@@ -205,7 +209,7 @@ class MineSweeper:
 
 
 if __name__ == '__main__':
-    mine = MineSweeper(20, 20, 1)
+    mine = MineSweeper(10, 10, 10)
     mine.draw_panel().show()
     while True:
         try:
