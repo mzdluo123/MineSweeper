@@ -39,6 +39,8 @@ cdef class MineSweeper:
             raise ValueError("非法操作")
         if mines < column - 1 or mines < row - 1:
             raise ValueError("就不能来点难的吗")
+        if mines > row * column / 2:
+            raise ValueError("这么多雷，你认真的吗？")
         self.row = row
         self.column = column
         self.mines = mines
@@ -52,7 +54,7 @@ cdef class MineSweeper:
         return f"[MineSweeper] {self.mines} in {self.row}*{self.column}"
 
     def draw_panel(self) -> Image.Image:
-        start = time()*1000
+        start = time() * 1000
         img = Image.new("RGB", (80 * self.column, 80 * self.row), (255, 255, 255))
         self.__draw_split_line(img)
         self.__draw_cell_cover(img)
@@ -120,7 +122,7 @@ cdef class MineSweeper:
     cpdef void mine(self, int row, int column):
         if not self.__is_valid_location(row, column):
             raise ValueError("非法操作")
-        cdef start = time()*1000
+        cdef start = time() * 1000
         cdef Cell cell = self.panel[row][column]
         if cell.is_mined:
             raise ValueError("你已经挖过这里了")
@@ -140,7 +142,7 @@ cdef class MineSweeper:
 
     cpdef void tag(self, int row, int column):
         cdef Cell cell = self.panel[row][column]
-        cdef start = time()*1000
+        cdef start = time() * 1000
         if cell.is_mined:
             raise ValueError("你不能标记一个你挖开的地方")
         if self.state != GameState.GAMING and self.state != GameState.PREPARE:

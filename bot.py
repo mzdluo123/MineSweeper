@@ -33,9 +33,9 @@ HELP = """
 def clean_thread():
     while running:
         for k, v in in_gaming_list.items():
-            if time() - v.start_time > 15 * 60:
+            if time() - v.start_time > 60 * 60:
                 del in_gaming_list[k]
-        sleep(2)
+        sleep(20)
 
 
 async def send_msg(target, msg: list, user, msg_type):
