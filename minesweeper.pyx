@@ -91,20 +91,20 @@ cdef class MineSweeper:
     cdef __draw_cell(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
         cdef int i, j
+        index_font_size = self.font.getsize("AA")
+        count_font_size = self.font.getsize("1")
         for i in range(0, self.row):
             for j in range(0, self.column):
                 cell = self.panel[i][j]
                 if not cell.is_mined:
-                    font_size = self.font.getsize("AA")
                     index = f"{COLUMN_NAME[i]}{COLUMN_NAME[j]}"
-                    center = (80 * (j + 1) - (font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (font_size[1] / 2))
+                    center = (80 * (j + 1) - (index_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (index_font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
                     count = self.count_around(i, j)
                     if count == 0:
                         continue
-                    font_size = self.font.getsize(str(count))
-                    center = (80 * (j + 1) - (font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (font_size[1] / 2))
+                    center = (80 * (j + 1) - (count_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (count_font_size[1] / 2))
                     draw.text(center, str(count), fill=self.__get_count_text_color(count), font=self.font)
 
     cdef __get_count_text_color(self, int count):
