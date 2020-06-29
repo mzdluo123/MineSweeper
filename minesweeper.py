@@ -24,7 +24,7 @@ class Cell:
         self.is_checked = False
 
     def __str__(self):
-        return f"[Cell] {self.is_mine}"
+        return f"[Cell] is_mine:{self.is_mine} is_marked:{self.is_marked} is_mined:{self.is_mined}"
 
 
 class MineSweeper:
@@ -44,11 +44,17 @@ class MineSweeper:
         self.panel = [[Cell(False, row=r, column=c) for c in range(column)] for r in range(row)]
         self.state = GameState.PREPARE
 
+    def __str__(self):
+        return f"[MineSweeper] {self.mines} in {self.row}*{self.column}"
+
+
     def draw_panel(self) -> Image.Image:
+        start = time()
         img = Image.new("RGB", (80 * self.column, 80 * self.row), (255, 255, 255))
         self.__draw_split_line(img)
         self.__draw_cell_cover(img)
         self.__draw_cell(img)
+        print(f"draw spend {time()-start}ms at {str(self)}")
         return img
 
     def __draw_split_line(self, img: Image.Image):
@@ -108,6 +114,7 @@ class MineSweeper:
     def mine(self, row: int, column: int):
         if not self.__is_valid_location(row, column):
             raise ValueError("非法操作")
+        start = time()
         cell = self.panel[row][column]
         if cell.is_mined:
             raise ValueError("你已经挖过这里了")
@@ -123,9 +130,11 @@ class MineSweeper:
         self.__reset_check()
         self.__spread_not_mine(row, column)
         self.__win_check()
+        print(f"mine spend {time()-start}ms at {str(self)}")
 
     def tag(self, row: int, column: int):
         cell = self.panel[row][column]
+        start = time()
         if cell.is_mined:
             raise ValueError("你不能标记一个你挖开的地方")
         if self.state != GameState.GAMING and self.state != GameState.PREPARE:
@@ -135,6 +144,7 @@ class MineSweeper:
             cell.is_marked = False
         else:
             cell.is_marked = True
+        print(f"tag spend {time()-start}ms at {str(self)}")
 
     def __gen_mine(self):
         count = 0
@@ -209,7 +219,7 @@ class MineSweeper:
 
 
 if __name__ == '__main__':
-    mine = MineSweeper(10, 10, 10)
+    mine = MineSweeper(25, 25, 25)
     mine.draw_panel().show()
     while True:
         try:
