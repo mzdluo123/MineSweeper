@@ -4,7 +4,7 @@ pyximport.install()
 from minesweeper import MineSweeper
 
 if __name__ == '__main__':
-    mine = MineSweeper(25, 25, 25)
+    mine = MineSweeper(10,10,10)
     mine.draw_panel().show()
     while True:
         try:

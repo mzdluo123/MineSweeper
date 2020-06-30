@@ -2,6 +2,7 @@
 import random
 from time import time
 from PIL import Image, ImageDraw, ImageColor, ImageFont
+from libc.stdlib cimport rand
 
 cdef str COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -98,13 +99,15 @@ cdef class MineSweeper:
                 cell = self.panel[i][j]
                 if not cell.is_mined:
                     index = f"{COLUMN_NAME[i]}{COLUMN_NAME[j]}"
-                    center = (80 * (j + 1) - (index_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (index_font_size[1] / 2))
+                    center = (
+                        80 * (j + 1) - (index_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (index_font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
                     count = self.count_around(i, j)
                     if count == 0:
                         continue
-                    center = (80 * (j + 1) - (count_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (count_font_size[1] / 2))
+                    center = (
+                        80 * (j + 1) - (count_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (count_font_size[1] / 2))
                     draw.text(center, str(count), fill=self.__get_count_text_color(count), font=self.font)
 
     cdef __get_count_text_color(self, int count):
@@ -155,14 +158,18 @@ cdef class MineSweeper:
         print(f"tag spend {time() - start}ms at {str(self)}")
 
     cdef void __gen_mine(self):
-        cdef int count = 0
-        while count < self.mines:
-            row = random.randint(0, self.row - 1)
-            column = random.randint(0, self.column - 1)
+        cdef list mine_location = [rand() / (self.column * self.row + 1.0) for i in range(self.mines)]
+        cdef int row, column, location
+        for location in mine_location:
+            row = int(location / self.column)
+            column = (location % self.column) - 1
+            if column == -1:
+                column = self.column - 1
+                row -= 1
             if self.panel[row][column].is_mine or self.panel[row][column].is_mined:
+                mine_location.append(random.randint(0, self.row * self.column))
                 continue
             self.panel[row][column].is_mine = True
-            count += 1
         self.state = GameState.GAMING
 
     cdef void __spread_not_mine(self, int row, int column):
