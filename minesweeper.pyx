@@ -2,7 +2,6 @@
 import random
 from time import time
 from PIL import Image, ImageDraw, ImageColor, ImageFont
-from libc.stdlib cimport rand
 
 cdef str COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -158,14 +157,14 @@ cdef class MineSweeper:
         print(f"tag spend {time() - start}ms at {str(self)}")
 
     cdef void __gen_mine(self):
-        cdef list mine_location = [rand() / (self.column * self.row + 1.0) for i in range(self.mines)]
-        cdef int row, column, location
+        cdef list mine_location = [random.randint(0, self.row * self.column) for i in range(self.mines)]
+        cdef int row, column,location
         for location in mine_location:
             row = int(location / self.column)
             column = (location % self.column) - 1
             if column == -1:
                 column = self.column - 1
-                row -= 1
+                row -=1
             if self.panel[row][column].is_mine or self.panel[row][column].is_mined:
                 mine_location.append(random.randint(0, self.row * self.column))
                 continue
