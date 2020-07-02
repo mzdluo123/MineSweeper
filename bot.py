@@ -107,8 +107,7 @@ async def msg_handel(source, plain, user, msg_type):
         if commands[1] == "中级":
             await new_game(source, user, msg_type, 16, 16, 40)
         if commands[1] == "高级":
-            await new_game(source, user, msg_type, 20, 20, 90)
-
+            await new_game(source, user, msg_type, 20, 20, 80)
         if commands[1] == "自定义" and len(commands) == 5:
             try:
                 await new_game(source, user, msg_type, int(commands[2]), int(commands[3]), int(commands[4]))

@@ -4,6 +4,11 @@ from time import time
 from PIL import Image, ImageDraw, ImageColor, ImageFont
 
 cdef str COLUMN_NAME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+cdef CELL_COVER = Image.new("RGB", (79, 79))
+draw = ImageDraw.Draw(CELL_COVER)
+draw.polygon([(0, 0), (0, 79), (79, 0)], fill=(255, 255, 255))
+draw.polygon([(79, 79), (0, 79), (79, 0)], fill=(128, 128, 128))
+draw.rectangle((10, 10, 79 - 10, 79 - 10), fill=(192, 192, 192))
 
 cpdef enum GameState:
     PREPARE = 1
@@ -35,10 +40,12 @@ cdef class MineSweeper:
     def __init__(self, row: int, column: int, mines: int):
         if row > 26 or column > 26:
             raise ValueError("暂不支持这么大的游戏盘")
+        if row < 5 or column < 5:
+            raise ValueError("别闹，这么小怎么玩？")
         if mines >= row * column or mines == 0:
             raise ValueError("非法操作")
-        if mines < column - 1 or mines < row - 1:
-            raise ValueError("就不能来点难的吗")
+        # if mines < column - 1 or mines < row - 1:
+        #     raise ValueError("就不能来点难的吗")
         if mines > row * column / 2:
             raise ValueError("这么多雷，你认真的吗？")
         self.row = row
@@ -55,7 +62,7 @@ cdef class MineSweeper:
 
     def draw_panel(self) -> Image.Image:
         start = time() * 1000
-        img = Image.new("RGB", (80 * self.column, 80 * self.row), (255, 255, 255))
+        img = Image.new("RGB", (80 * self.column, 80 * self.row), (193, 193, 193))
         self.__draw_split_line(img)
         self.__draw_cell_cover(img)
         self.__draw_cell(img)
@@ -66,9 +73,9 @@ cdef class MineSweeper:
         draw = ImageDraw.Draw(img)
         cdef int i
         for i in range(0, self.row):
-            draw.line((0, i * 80, img.size[0], i * 80), fill=ImageColor.getrgb("black"))
+            draw.line((0, i * 80, img.size[0], i * 80), fill=(134,134,134))
         for i in range(0, self.column):
-            draw.line((i * 80, 0, i * 80, img.size[1]), fill=ImageColor.getrgb("black"))
+            draw.line((i * 80, 0, i * 80, img.size[1]), fill=(134,134,134))
 
     cdef __draw_cell_cover(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
@@ -85,8 +92,9 @@ cdef class MineSweeper:
                                    fill=ImageColor.getrgb("blue"))
                     continue
                 if not cell.is_mined:
-                    draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
-                                   fill=ImageColor.getrgb("gray"))
+                    # draw.rectangle((j * 80 + 1, i * 80 + 1, (j + 1) * 80 - 1, (i + 1) * 80 - 1),
+                    #                fill=ImageColor.getrgb("gray"))
+                    img.paste(CELL_COVER, (j * 80 + 1, i * 80 + 1))
 
     cdef __draw_cell(self, img: Image.Image):
         draw = ImageDraw.Draw(img)
@@ -99,7 +107,7 @@ cdef class MineSweeper:
                 if not cell.is_mined:
                     index = f"{COLUMN_NAME[i]}{COLUMN_NAME[j]}"
                     center = (
-                        80 * (j + 1) - (index_font_size[0] / 2) - 40, 80 * (i + 1) - 40 - (index_font_size[1] / 2))
+                        80 * (j + 1) - (index_font_size[0] / 2) - 37, 80 * (i + 1) - 40 - (index_font_size[1] / 2))
                     draw.text(center, index, fill=ImageColor.getrgb("black"), font=self.font)
                 else:
                     count = self.count_around(i, j)
@@ -158,13 +166,13 @@ cdef class MineSweeper:
 
     cdef void __gen_mine(self):
         cdef list mine_location = [random.randint(0, self.row * self.column) for i in range(self.mines)]
-        cdef int row, column,location
+        cdef int row, column, location
         for location in mine_location:
             row = int(location / self.column)
             column = (location % self.column) - 1
             if column == -1:
                 column = self.column - 1
-                row -=1
+                row -= 1
             if self.panel[row][column].is_mine or self.panel[row][column].is_mined:
                 mine_location.append(random.randint(0, self.row * self.column))
                 continue
@@ -200,13 +208,11 @@ cdef class MineSweeper:
                 self.panel[i][j].is_checked = False
 
     cdef void __win_check(self):
-        mined = 0
         for i in range(0, self.row):
             for j in range(0, self.column):
-                if self.panel[i][j].is_mined:
-                    mined += 1
-        if mined == (self.column * self.row) - self.mines:
-            self.state = GameState.WIN
+                if (not self.panel[i][j].is_mined) and (not self.panel[i][j].is_mine):
+                    return
+        self.state = GameState.WIN
 
     cdef int count_around(self, int row, int column):
         cdef count = 0
